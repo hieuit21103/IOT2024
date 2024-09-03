@@ -50,6 +50,7 @@ void loop()
   if (nodemcu.available() > 0) {
     String req = nodemcu.readStringUntil('\n');
     req.trim();
+    Serial.println(req);
     if (req.equals("mt")) {
         int sdata = analogRead(sensor);
         sdata = map(sdata, 1023, 0, 0, 100);

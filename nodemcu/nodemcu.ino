@@ -20,7 +20,7 @@ int speed = 127;
 String timeArray[10];
 ESP8266WebServer server(80);
 SoftwareSerial arduino(4,5);
-String url = "http://192.168.1.193/iot";
+String url = "http://192.168.220.251/iot";
 RTC_DS3231 rtc;
 
 void handleRoot(){
@@ -257,7 +257,7 @@ bool check(int hrs,int mins) {
 
 void log(String station){
   DateTime now = rtc.now();
-  String timestamp = String(now.year()) + "-" + String(now.month()) + "-" + String(now.day()) + " " + String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
+  String timestamp = String(now.year()) + "-" + String(now.month()) + "-" + String(now.day()) + "%20" + String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
   // String timestamp = "test";
   String modeString = "";
   if(mode == 0){
@@ -269,6 +269,7 @@ void log(String station){
     WiFiClient client;
     HTTPClient http;
     String surl = url+"/log.php?timestamp=" + timestamp + "&mode=" + modeString + "&station=" + station + "&speed=" + String(speed);
+    Serial.println(surl);
     
     http.begin(client,surl);
     int httpResponseCode = http.GET();
@@ -342,8 +343,8 @@ void setup() {
 void loop() {
   server.handleClient();
   MDNS.update();
+  DateTime now = rtc.now();
   if(mode == 0){
-    DateTime now = rtc.now();
     int currentHours = now.hour();
     int currentMins = now.minute();
     // int currentHours = 6;
