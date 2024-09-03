@@ -104,7 +104,11 @@ void handleOff() {
 void handleAuto() {
   if (server.hasArg("preset")) {
     String preset = server.arg("preset");
-    String surl = url+"/fetch_data.php?preset=" + preset;
+    if(preset = ""){
+      String surl = url+"/fetch_data.php?status=1";
+    }else{
+      String surl = url+"/fetch_data.php?preset=" + preset;
+    }
     WiFiClient client;
     HTTPClient http;
     
