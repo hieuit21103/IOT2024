@@ -268,7 +268,7 @@ $results =$stmt->fetchAll(PDO::FETCH_ASSOC);
         getPStation()
         getMode()
         getMT()
-        //setInterval(getMT, 1000);
+        setInterval(getMT, 1000);
         
 
         document.getElementById('pump-switch').addEventListener('change',function() {
