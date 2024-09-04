@@ -20,10 +20,11 @@ int speed = 127;
 String timeArray[10];
 ESP8266WebServer server(80);
 SoftwareSerial arduino(4,5);
-String url = "http://192.168.220.251/iot";
+String url = "http://192.168.66.251/iot";
 RTC_DS3231 rtc;
 
 void handleRoot(){
+  server.sendHeader("Access-Control-Allow-Origin","*");
   server.send(200,"text/plain","SERVER IS RUNNING");
 }
 void handleJson() {
@@ -91,14 +92,14 @@ void handleOn() {
     int motorSpeed = server.arg("speed").toInt();
     arduino.printf("on %d \n",motorSpeed);
     Serial.printf("on %d \n",motorSpeed);
-    log("on");
+    log("on",-1);
     server.send(200);
   }
 }
 void handleOff() {
   arduino.println("off");
   Serial.println("off");
-  log("off");
+  log("off",-1);
   server.send(200);
 }
 void handleAuto() {
@@ -121,13 +122,12 @@ void handleAuto() {
       String response = http.getString();
       StaticJsonDocument<1024> doc;
       DeserializationError error = deserializeJson(doc, response);
-      
       if (!error) {
+        mode = 0;
         JsonArray array = doc.as<JsonArray>();
         for (JsonObject obj : array) {
           speed = obj["speed"];
           String timeString = obj["time"];
-          mode = 0;
           int index = 0;
           int startIndex = 0;
           while ((startIndex = timeString.indexOf(' ', startIndex)) != -1) {
@@ -260,7 +260,7 @@ bool check(int hrs,int mins) {
   return false;
 }
 
-void log(String station){
+void log(String station,int currentMins){
   DateTime now = rtc.now();
   String timestamp = String(now.year()) + "-" + String(now.month()) + "-" + String(now.day()) + "%20" + String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
   // String timestamp = "test";
@@ -271,21 +271,22 @@ void log(String station){
     modeString = "manual";
   }
   if (WiFi.status() == WL_CONNECTED) {
-    WiFiClient client;
-    HTTPClient http;
-    String surl = url+"/log.php?timestamp=" + timestamp + "&mode=" + modeString + "&station=" + station + "&speed=" + String(speed);
-    Serial.println(surl);
-    
-    http.begin(client,surl);
-    int httpResponseCode = http.GET();
-    
-    if (httpResponseCode > 0) {
-      String response = http.getString();
-      Serial.println("HTTP Response code: " + String(httpResponseCode));
-    } else {
-      Serial.println("Error on HTTP request: " + String(httpResponseCode));
+    if(currentMins != now.minute()){
+      WiFiClient client;
+      HTTPClient http;
+      String surl = url+"/log.php?timestamp=" + timestamp + "&mode=" + modeString + "&station=" + station + "&speed=" + String(speed);
+      
+      http.begin(client,surl);
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode > 0) {
+        String response = http.getString();
+        Serial.println("HTTP Response code: " + String(httpResponseCode));
+      } else {
+        Serial.println("Error on HTTP request: " + String(httpResponseCode));
+      }
+      http.end();
     }
-    http.end();
   } else {
     Serial.println("WiFi not connected");
   }
@@ -356,7 +357,7 @@ void loop() {
     // int currentMins = 0;
     if(check(currentHours,currentMins)){
       arduino.printf("on %d \n",speed);
-      log("on");
+      log("on",currentMins);
     }
     arduino.println("mt");
     delay(1000);
@@ -367,10 +368,9 @@ void loop() {
         int moisture = data.substring(data.indexOf("moisture:") + 9, data.indexOf(" ")).toInt();
         if(moisture > 50){
           arduino.println("off");
-          log("off");
+          log("off",currentMins);
         }
       }
     }
-    delay(60000);
   }
 }
